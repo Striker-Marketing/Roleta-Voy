@@ -95,36 +95,36 @@ function createRoleta(query, options = {}) {
 
   const {
     duration = 5,
-    ease = 'power4.out',
+    ease = "power4.out",
     minTurns = 5,
     maxTurns = 7,
     // Com power4.out a roda ja percorreu ~98% do angulo aos 62% do tempo:
     // visualmente parada, mas o tween ainda rasteja ate completar. O fim util
     // do giro e aqui, nao no onComplete.
-    settleAt = 0.62
+    settleAt = 0.62,
   } = options;
 
-  const host = typeof query === 'string' ? document.querySelector(query) : query;
+  const host = typeof query === "string" ? document.querySelector(query) : query;
 
   if (!host) {
     throw new Error(`createRoleta: nenhum elemento encontrado para ${query}`);
   }
 
-  if (typeof gsap === 'undefined') {
-    throw new Error('createRoleta: GSAP nao esta carregado');
+  if (typeof gsap === "undefined") {
+    throw new Error("createRoleta: GSAP nao esta carregado");
   }
 
   host.innerHTML = SVG;
 
-  const svg = host.querySelector('svg');
-  const wheel = svg.querySelector('.wheel');
-  const arrow = svg.querySelector('.spin-arrow');
-  const winner = svg.querySelector('.winner');
-  const hub = svg.querySelector('circle');
+  const svg = host.querySelector("svg");
+  const wheel = svg.querySelector(".wheel");
+  const arrow = svg.querySelector(".spin-arrow");
+  const winner = svg.querySelector(".winner");
+  const hub = svg.querySelector("circle");
 
   // Centro de rotacao lido do proprio SVG (circulo central).
-  const cx = parseFloat(hub.getAttribute('cx'));
-  const cy = parseFloat(hub.getAttribute('cy'));
+  const cx = parseFloat(hub.getAttribute("cx"));
+  const cy = parseFloat(hub.getAttribute("cy"));
 
   // O contorno de um setor circular e simetrico em relacao a sua bissetriz,
   // entao a media de pontos amostrados uniformemente ao longo do path cai
@@ -141,7 +141,7 @@ function createRoleta(query, options = {}) {
       sy += p.y;
     }
 
-    const deg = Math.atan2(sx / N - cx, cy - sy / N) * 180 / Math.PI;
+    const deg = (Math.atan2(sx / N - cx, cy - sy / N) * 180) / Math.PI;
     return (deg + 360) % 360;
   };
 
@@ -160,7 +160,7 @@ function createRoleta(query, options = {}) {
 
     return {
       x: (left + width / 2) / window.innerWidth,
-      y: (top + height / 2) / window.innerHeight
+      y: (top + height / 2) / window.innerHeight,
     };
   };
 
@@ -207,7 +207,7 @@ function createRoleta(query, options = {}) {
         active = null;
 
         const ctx = context();
-        [...listeners].forEach(fn => fn(ctx));
+        [...listeners].forEach((fn) => fn(ctx));
         resolve(ctx);
       };
 
@@ -220,7 +220,7 @@ function createRoleta(query, options = {}) {
         onUpdate: () => {
           if (tween.progress() >= settleAt) settle();
         },
-        onComplete: settle
+        onComplete: settle,
       });
     });
 
@@ -229,3 +229,5 @@ function createRoleta(query, options = {}) {
 
   return { spin, onEnd };
 }
+
+window.createRoleta = createRoleta;
