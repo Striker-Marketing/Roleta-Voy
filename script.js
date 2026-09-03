@@ -127,8 +127,6 @@ function createRoleta(query, options = {}) {
     // visualmente parada, mas o tween ainda rasteja ate completar. O fim util
     // do giro e aqui, nao no onComplete.
     settleAt = 0.62,
-    // Opacidade das fatias que nao estao sob a seta, durante e depois do giro.
-    dimOpacity = 0.35,
   } = options;
 
   const host = typeof query === "string" ? document.querySelector(query) : query;
@@ -178,54 +176,6 @@ function createRoleta(query, options = {}) {
   // Lido do DOM em vez de cravado: mover a classe .winner para outra fatia
   // continua funcionando sem tocar neste arquivo.
   const winnerAngle = wedgeAngle(winner);
-
-  // Setor e texto do premio sao <path> irmaos: o setor e o unico com stroke, e
-  // o path seguinte (sem stroke) e o rotulo dele. Parear em runtime evita mexer
-  // nos `d` gigantes do export do Figma — e o texto apaga junto com o setor.
-  const slices = [];
-
-  [...wheel.children].forEach((el) => {
-    if (el.getAttribute("stroke-width")) {
-      slices.push({ nodes: [el], angle: wedgeAngle(el) });
-    } else if (slices.length) {
-      slices[slices.length - 1].nodes.push(el);
-    }
-  });
-
-  let highlighted = -1;
-
-  // A fatia sob a seta e a que tem (angulo + rotacao) mais perto de 0 (mod 360).
-  const highlight = (rotation) => {
-    let best = 0;
-    let bestDist = Infinity;
-
-    slices.forEach((slice, i) => {
-      const off = ((((slice.angle + rotation + 180) % 360) + 360) % 360) - 180;
-      const dist = Math.abs(off);
-
-      if (dist < bestDist) {
-        bestDist = dist;
-        best = i;
-      }
-    });
-
-    if (best === highlighted) return;
-
-    // Na primeira chamada ninguem esta apagado ainda, entao todas as fatias
-    // entram no tween. Depois disso so duas mudam: a que sai e a que entra.
-    const changed =
-      highlighted === -1 ? slices : [slices[highlighted], slices[best]];
-
-    highlighted = best;
-
-    changed.forEach((slice) => {
-      gsap.to(slice.nodes, {
-        opacity: slice === slices[best] ? 1 : dimOpacity,
-        duration: 0.18,
-        ease: "power1.out",
-      });
-    });
-  };
 
   const listeners = [];
   let current = 0;
@@ -329,7 +279,6 @@ function createRoleta(query, options = {}) {
         ease,
         overwrite: true,
         onUpdate: () => {
-          highlight(gsap.getProperty(wheel, "rotation"));
           if (tween.progress() >= settleAt) settle();
         },
         onComplete: settle,
