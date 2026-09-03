@@ -62,13 +62,17 @@ const TEMPLATE = `
         transform="rotate(-180 166.676 174.958)" fill="white" />
     </g>
     <!-- Cadeado deslocado (+0.176, +1.958) para casar com o eixo da roda. -->
-    <g transform="translate(0.176 1.958)">
+    <g class="lock" transform="translate(0.176 1.958)">
+      <!-- Grupo interno sem transform proprio: e nele que a chacoalhada anima,
+           sem disputar o translate do grupo de fora. -->
+      <g class="lock-nudge">
       <path
         d="M172.042 170.741H161.517C160.679 170.741 160 171.42 160 172.257V182.783C160 183.62 160.679 184.299 161.517 184.299H172.042C172.879 184.299 173.559 183.62 173.559 182.783V172.257C173.559 171.42 172.879 170.741 172.042 170.741ZM167.456 177.532L167.682 179.577C167.719 179.905 167.462 180.192 167.132 180.192H166.437C166.104 180.192 165.846 179.899 165.888 179.568L166.147 177.555C165.676 177.322 165.353 176.838 165.352 176.278C165.351 175.5 165.982 174.859 166.759 174.848C167.557 174.838 168.206 175.481 168.206 176.275C168.206 176.818 167.903 177.291 167.456 177.532Z"
         fill="url(#paint0_linear_4421_571)" />
       <path
         d="M163.453 166.65C163.453 165.761 163.799 164.926 164.427 164.298C165.056 163.67 165.891 163.324 166.779 163.324C167.668 163.324 168.503 163.67 169.131 164.298C169.759 164.926 170.105 165.761 170.105 166.65V169.804H171.429V166.65C171.429 166.023 171.306 165.413 171.064 164.84C170.829 164.286 170.494 163.789 170.067 163.362C169.64 162.935 169.143 162.6 168.589 162.366C168.016 162.123 167.407 162 166.779 162C166.152 162 165.543 162.123 164.969 162.366C164.415 162.6 163.918 162.935 163.491 163.362C163.064 163.789 162.729 164.286 162.495 164.84C162.252 165.413 162.129 166.023 162.129 166.65V169.804H163.453V166.65H163.453Z"
         fill="url(#paint1_linear_4421_571)" />
+      </g>
     </g>
   </g>
   <defs>
@@ -142,6 +146,8 @@ function createRoleta(query, options = {}) {
   const arrow = svg.querySelector(".spin-arrow");
   const winner = svg.querySelector(".winner");
   const hub = svg.querySelector(".hub");
+  const lock = svg.querySelector(".lock");
+  const lockNudge = svg.querySelector(".lock-nudge");
 
   // Centro de rotacao lido do proprio SVG (elipse central), que fica sobre o
   // apex das fatias.
@@ -174,6 +180,34 @@ function createRoleta(query, options = {}) {
   const listeners = [];
   let current = 0;
   let active = null;
+  let unlocked = false;
+
+  // Clicar na roda nao gira nada — a roleta so responde a quem chama spin().
+  // A chacoalhada do cadeado e a resposta a esse clique perdido. Timeline
+  // montada uma vez e reiniciada a cada clique, para nao empilhar tweens.
+  const nudge = gsap
+    .timeline({ paused: true })
+    .to(lockNudge, {
+      scale: 1.18,
+      transformOrigin: "50% 50%",
+      duration: 0.12,
+      ease: "power2.out",
+    })
+    .to(
+      lockNudge,
+      {
+        keyframes: { x: [-2.2, 2.2, -1.4, 1.4, 0] },
+        duration: 0.34,
+        ease: "sine.inOut",
+      },
+      "<"
+    )
+    .to(lockNudge, { scale: 1, duration: 0.16, ease: "power2.in" }, "-=0.1");
+
+  svg.addEventListener("click", () => {
+    if (unlocked) return;
+    nudge.restart();
+  });
 
   // Posicao da seta normalizada pela janela (0..1), no formato que o
   // canvas-confetti espera em `origin`.
@@ -209,6 +243,11 @@ function createRoleta(query, options = {}) {
    */
   const spin = () => {
     if (active) return active;
+
+    // Girar ja destrava a roleta: o cadeado sai de cena e nao volta.
+    unlocked = true;
+    nudge.kill();
+    gsap.to(lock, { autoAlpha: 0, duration: 0.3, ease: "power2.out" });
 
     const turns = Math.round(gsap.utils.random(minTurns, maxTurns));
 
